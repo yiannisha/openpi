@@ -619,8 +619,7 @@ def train_loop(config: _config.TrainConfig):
     if is_main and config.wandb_enabled:
         wandb.finish()
 
-    cleanup_ddp()
-
+    cleanup_ddp()  
 
 def main():
     init_logging()

@@ -17,6 +17,27 @@ from openpi.training.droid_rlds_dataset import DroidRldsDataset
 import openpi.transforms as _transforms
 
 T_co = TypeVar("T_co", covariant=True)
+_LEROBOT_EPISODES_ENV = "OPENPI_LEROBOT_EPISODES"
+
+
+def _get_lerobot_episodes_from_env() -> list[int] | None:
+    episodes_spec = os.getenv(_LEROBOT_EPISODES_ENV)
+    if episodes_spec is None:
+        return None
+
+    episodes_spec = episodes_spec.strip()
+    if not episodes_spec:
+        return None
+
+    if ":" in episodes_spec:
+        parts = episodes_spec.split(":")
+        if len(parts) not in (2, 3):
+            raise ValueError(f"{_LEROBOT_EPISODES_ENV} range must be start:stop or start:stop:step.")
+        start, stop = int(parts[0]), int(parts[1])
+        step = int(parts[2]) if len(parts) == 3 else 1
+        return list(range(start, stop, step))
+
+    return [int(part) for part in episodes_spec.split(",") if part.strip()]
 
 
 class Dataset(Protocol[T_co]):
@@ -137,9 +158,14 @@ def create_torch_dataset(
     if repo_id == "fake":
         return FakeDataset(model_config, num_samples=1024)
 
+    episodes = _get_lerobot_episodes_from_env()
+    if episodes is not None:
+        logging.info(f"Using LeRobot episode subset from {_LEROBOT_EPISODES_ENV}: {episodes[:3]}...{episodes[-3:]}")
+
     dataset_meta = lerobot_dataset.LeRobotDatasetMetadata(repo_id)
     dataset = lerobot_dataset.LeRobotDataset(
         data_config.repo_id,
+        episodes=episodes,
         delta_timestamps={
             key: [t / dataset_meta.fps for t in range(action_horizon)] for key in data_config.action_sequence_keys
         },
