@@ -90,12 +90,14 @@ class PI0Pytorch(nn.Module):
         paligemma_config = _gemma.get_config(config.paligemma_variant)
         action_expert_config = _gemma.get_config(config.action_expert_variant)
 
+        # print(1.1)
         self.paligemma_with_expert = PaliGemmaWithExpertModel(
             paligemma_config,
             action_expert_config,
             use_adarms=[False, True] if self.pi05 else [False, False],
             precision=config.dtype,
         )
+        # print(1.2)
 
         self.action_in_proj = nn.Linear(config.action_dim, action_expert_config.width)
         self.action_out_proj = nn.Linear(action_expert_config.width, config.action_dim)
@@ -314,9 +316,9 @@ class PI0Pytorch(nn.Module):
 
         return embs, pad_masks, att_masks, adarms_cond
 
-    def forward(self, observation, actions, noise=None, time=None) -> Tensor:
+    def forward(self, actions, images, img_masks, lang_tokens, lang_masks, state, noise=None, time=None) -> Tensor:
         """Do a full training forward pass and compute the loss (batch_size x num_steps x num_motors)"""
-        images, img_masks, lang_tokens, lang_masks, state = self._preprocess_observation(observation, train=True)
+        # images, img_masks, lang_tokens, lang_masks, state = self._preprocess_observation(observation, train=True)
 
         if noise is None:
             noise = self.sample_noise(actions.shape, actions.device)

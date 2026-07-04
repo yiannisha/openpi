@@ -34,6 +34,7 @@ def preprocess_observation_pytorch(
     batch_shape = observation.state.shape[:-1]
 
     out_images = {}
+    # print(f"image keys: {image_keys}, image_resolution: {image_resolution}, batch_shape: {batch_shape}")
     for key in image_keys:
         image = observation.images[key]
 
@@ -69,6 +70,7 @@ def preprocess_observation_pytorch(
                     # Use tensor operations instead of .item() for torch.compile compatibility
                     start_h = torch.randint(0, max_h + 1, (1,), device=image.device)
                     start_w = torch.randint(0, max_w + 1, (1,), device=image.device)
+                    # causes CPU/GPU sync cause torch tensors are used as indices, causing cuda graph capture to fail
                     image = image[:, start_h : start_h + crop_height, start_w : start_w + crop_width, :]
 
                 # Resize back to original size
